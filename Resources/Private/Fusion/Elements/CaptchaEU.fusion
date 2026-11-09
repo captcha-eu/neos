@@ -3,6 +3,8 @@ prototype(CaptchaEU.CaptchaEU:Captcha.Definition) < prototype(Neos.Form.Builder:
     properties {
         publicKey = ${Configuration.setting('CaptchaEU.CaptchaEU.publicKey') ? Configuration.setting('CaptchaEU.CaptchaEU.publicKey') : null}
         restKey = ${Configuration.setting('CaptchaEU.CaptchaEU.restKey') ? Configuration.setting('CaptchaEU.CaptchaEU.restKey') : null}
+        defaultMode = ${Configuration.setting('CaptchaEU.CaptchaEU.mode') ? Configuration.setting('CaptchaEU.CaptchaEU.mode') : 'invisible'}
+        defaultTheme = ${Configuration.setting('CaptchaEU.CaptchaEU.theme') ? Configuration.setting('CaptchaEU.CaptchaEU.theme') : 'light'}
     }
 }
 
