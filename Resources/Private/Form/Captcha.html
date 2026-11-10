@@ -1,19 +1,59 @@
+
 <f:layout name="Neos.Form:Field" />
+
 <f:section name="field">
-     <div class="ff">
-			 <f:form.hidden property="{element.identifier}" id="{element.uniqueIdentifier}" class="some" value="empty" />
-			 <script>
-				(() => {
-				var DOMReady = function (callback) {
-					document.readyState === "interactive" || document.readyState === "complete"
-						? callback()
-						: document.addEventListener("DOMContentLoaded", callback);
-        };
-					DOMReady(() => {
-							KROT.setup("{f:if(condition: element.properties.overridePublicKey, then: element.properties.overridePublicKey, else: element.properties.publicKey)}");
-					});
-			   KROT.interceptForm(document.querySelector("#{element.parentRenderable.parentRenderable.identifier}"))
-				})();
-			 </script>
-     </div>
+
+    <f:variable
+        name="publicKey"
+        value="{f:if(condition: element.properties.overridePublicKey, then: element.properties.overridePublicKey, else: element.properties.publicKey)}"
+    />
+
+    <f:variable
+        name="mode"
+        value="{f:if(condition: element.properties.mode, then: element.properties.mode, else: element.properties.defaultMode)}"
+    />
+
+    <f:variable
+        name="theme"
+        value="{f:if(condition: element.properties.theme, then: element.properties.theme, else: element.properties.defaultTheme)}"
+    />
+
+    <div class="ff">
+
+        <f:form.hidden
+            property="{element.identifier}"
+            id="{element.uniqueIdentifier}"
+            class="some"
+            value="empty"
+        />
+
+        <f:if condition="{mode} == 'widget'">
+
+            <input
+                type="hidden"
+                name="captcha_at_solution"
+                id="captcha-at-solution-{element.uniqueIdentifier}"
+                value=""
+            />
+
+            <div
+                class="cpt_widget"
+                data-key="{publicKey}"
+                data-theme="{theme}"
+                data-field-selector="#captcha-at-solution-{element.uniqueIdentifier}">
+            </div>
+
+        </f:if>
+
+        <span
+            hidden
+            data-captchaeu="{mode}"
+            data-key="{publicKey}"
+            data-field-id="{element.uniqueIdentifier}">
+        </span>
+
+        <script src="{f:uri.resource(path: 'JavaScript/captchaeu.js', package: 'CaptchaEU.CaptchaEU')}"></script>
+
+    </div>
+
 </f:section>

@@ -2,6 +2,7 @@
   superTypes:
     'Neos.Form.Builder:FormElement': true
     'CaptchaEU.CaptchaEU:OverrideConfigurationMixin': true
+  label: "${node.properties.identifier || node.properties.label || node.nodeTypeName}"
   ui:
     label: i18n
     icon: 'resource://CaptchaEU.CaptchaEU/Icons/cpt-icon.svg'

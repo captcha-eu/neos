@@ -8,67 +8,94 @@ use Neos\Form\Core\Runtime\FormRuntime;
 
 class Captcha extends AbstractFormElement
 {
-
     /**
      * @Flow\InjectConfiguration()
      * @var array
      */
     protected $settings = [];
 
-
     /**
      * Check the captcha solution before submitting form.
      *
      * @param FormRuntime $formRuntime The current form runtime
      * @param mixed       $elementValue The transmitted value of the form field.
-     *
-     * @return void
      */
-
     public function onSubmit(FormRuntime $formRuntime, &$elementValue)
     {
         $properties = $this->getProperties();
-        $restKey = $properties['restKey'] ? $properties['restKey'] : ($this->settings['restKey'] ? $this->settings['restKey'] : null);
-
-        if($properties["overrideRestKey"] && !empty($properties["overrideRestKey"])) {
-          $restKey = $properties["overrideRestKey"];
+        $restKey = null;
+        foreach ([
+            $properties['overrideRestKey'] ?? null,
+            $properties['restKey'] ?? null,
+            $this->settings['restKey'] ?? null,
+        ] as $candidate) {
+            if (is_string($candidate) && trim($candidate) !== '') {
+                $restKey = trim($candidate);
+                break;
+            }
         }
 
-        if (empty($restKey)) {
-            $processingRule = $this->getRootForm()->getProcessingRule($this->getIdentifier());
-            $processingRule->getProcessingMessages()->addError(new Error('Error. Please try again later.', 17942348245));
+        if ($restKey === null) {
+            $this->addValidationError('Error. Please try again later.', 17942348245);
             return;
         }
 
-        $result = ['verified' => false, 'error' => ''];
+        $solution = $_POST['captcha_at_solution'] ?? '';
 
-        if (empty($_POST['captcha_at_solution'])) {
-            $processingRule = $this->getRootForm()->getProcessingRule($this->getIdentifier());
-            $processingRule->getProcessingMessages()->addError(new Error('You forgot to add the solution parameter.', 1515642243));
-        } else {
-                $solution = $_POST["captcha_at_solution"];
-                $result["verified"] = $this->checkSolution($solution, $restKey);
+        if (!is_string($solution) || $solution === '') {
+            $this->addValidationError('You forgot to add the solution parameter.', 1515642243);
+            return;
         }
 
-        if ($result['verified'] === false) {
-                $processingRule = $this->getRootForm()->getProcessingRule($this->getIdentifier());
-                $processingRule->getProcessingMessages()->addError(new Error($result['error'], 1380742852));
+        if (!$this->checkSolution($solution, $restKey)) {
+            $this->addValidationError('Captcha verification failed. Please try again.', 1380742852);
         }
     }
 
-    public function checkSolution($solution, $restKey) {
-      $ch = curl_init("https://w19.captcha.at/validate");
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $solution);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Rest-Key: ' . $restKey));
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      $result = curl_exec($ch);
-      curl_close($ch);
+    public function checkSolution($solution, $restKey): bool
+    {
+        if (
+            !is_string($solution) || trim($solution) === ''
+            || !is_string($restKey) || trim($restKey) === ''
+        ) {
+            return false;
+        }
 
-      $resultObject = json_decode($result);
-      if ($resultObject->success) {
-        return true;
-      } else {
-        return false;
-      }
+        $ch = curl_init('https://w19.captcha.at/validate');
+
+        if ($ch === false) {
+            return false;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $solution,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Rest-Key: ' . $restKey,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($response === false || $httpCode !== 200) {
+            return false;
+        }
+
+        $result = json_decode($response, true);
+
+        return is_array($result) && ($result['success'] ?? false) === true;
+    }
+
+    private function addValidationError(string $message, int $code): void
+    {
+        $this->getRootForm()
+            ->getProcessingRule($this->getIdentifier())
+            ->getProcessingMessages()
+            ->addError(new Error($message, $code));
     }
 }

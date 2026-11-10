@@ -21,8 +21,11 @@ Neos:
         autoInclude:
           'CaptchaEU.CaptchaEU':
             - 'NodeTypes/*'
-
+  
 CaptchaEU:
   CaptchaEU:
     publicKey: 'add-your-site-key'
     restKey: 'add-your-secret-key'
+    mode: 'widget'   # invisible | widget
+    theme: 'light'      # light | dark | auto
+
